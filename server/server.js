@@ -1,8 +1,16 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { importCSVData } = require('./csvtojson.js')
+
+
 const Laptop = require('./model/Laptop.js');
 const Comment = require('./model/Review.js');
+
+const {AmazonData, FlipkartData} = require('./utils/dataFill.js');
+
+const amazonData = require('./Data/amazon_complete_data.json');
+const flipkartData = require('./Data/flipkart_complete_data.json');
+
 const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
@@ -113,6 +121,29 @@ app.get('/api/check-auth',(req,res)=>{
 });
 
 //Data filling API
+
+app.get('/import/amazon', async(req, res) => {
+    try {
+      const transformedData = amazonData.map(AmazonData);
+      await Laptop.insertMany(transformedData);
+      res.status(200).json({success: true, message: 'Data Imported Successfully'});
+    } catch(err) {
+      console.log('Error importing Amazon data:', err);
+      res.status(500).json({success: false, message: 'Error importing Amazon data'});
+    }
+});
+
+app.get('/import/flipkart', async(req, res) => {
+    try {
+      const transformedData = flipkartData.map(FlipkartData);
+      await Laptop.insertMany(transformedData);
+      res.status(200).json({success: true, message: 'Data Imported Successfully'});
+    } catch(err) {
+      console.log('Error importing Flipkart data:', err);
+      res.status(500).json({success: false, message: 'Error importing Flipkart data'});
+    }
+});
+
 app.get('/api/insertonetime',async(req,res)=>{
     res.send('API is working');
     try{
