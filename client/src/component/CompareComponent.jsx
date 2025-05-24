@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import LaptopSearch from "./LaptopSearch";
-import AuthButtons from "@/components/ui/logsin";
 import { Menu, X } from "lucide-react"; // You may need to install lucide-react
+import AuthButtons from "./AuthButtons"; // Adjust the import path as necessary
+
 
 const CompareComponent = () => {
   const [laptop1, setLaptop1] = useState({ id: null, name: "" });
@@ -65,9 +66,9 @@ const CompareComponent = () => {
               >
                 Compare
               </button>
-              {/* <div className="w-full sm:w-auto">
+              <div className="w-full sm:w-auto">
                 <AuthButtons />
-              </div> */}
+              </div>
             </div>
           </div>
         </div>

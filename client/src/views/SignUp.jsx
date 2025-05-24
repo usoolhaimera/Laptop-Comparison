@@ -41,9 +41,12 @@ const SignUp = () => {
       setLoading(true);
       const response = await axios.post('http://localhost:8080/api/register', {
         email: formData.email,
-        userName: formData.userName,
+        name: formData.userName,
         password: formData.password
-      });
+      },{
+      withCredentials: true         // Add this to handle cookies properly
+    });
+  
       
       if (response.data.success) {
         // Redirect to dashboard or login page

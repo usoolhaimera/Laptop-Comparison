@@ -25,7 +25,8 @@ const cors = require('cors');
 
 // const PORT = process.env.PORT || 8080;
 const corsOptions = {
-  origin: ["http://localhost:5173"]
+  origin: ["http://localhost:5173"],
+  credentials: true,
 }
 
 const app = express();
@@ -61,7 +62,7 @@ connectDB().catch(err=> console.log(err));
 async function connectDB(){
     //add your own connection string
     try{
-        await mongoose.connect(process.env.Local_URL || process.env.Mongo_URL);
+        await mongoose.connect(process.env.Local_URL || process.env.Mongo_URL);  
         // console.log(process.env.Mongo_URL);
         console.log('Database Connected');
     }catch(err){
@@ -74,30 +75,54 @@ async function connectDB(){
 //api routes
 
 //Authentication API
-app.post('/api/register',async(req,res)=>{
-    try{
-        const {email,password,userName} = req.body;
+app.post('/api/register', async(req, res) => {
+    try {
+        const {email, password, name} = req.body;
+        console.log(email, password, name);
+
+        // Check if username already exists
+        const existingUser = await User.findOne({ username: email });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false, 
+                message: 'Username already exists'
+            });
+        }
+
+        // Create user with both username and email set
         const user = new User({
-            email,
-            username: userName,
+            username: email,
+            email: email,  // Add this line to set the email field
+            name: name,
         });
-        const registeredUser = await User.register(user,password);
+        
+        const registeredUser = await User.register(user, password);
 
-        req.login(registeredUser,(err) =>{
-            if(err){
-                console.log('Login Error',err);
-                return res.status(500).json({success:false,message:'Login Error'});
+        req.login(registeredUser, (err) => {
+            if(err) {
+                console.log('Login Error', err);
+                return res.status(500).json({success: false, message: 'Login Error'});
             }
-            res.status(200).json({success:true,message:'User Registered Successfully'});
-        })
+            res.status(200).json({success: true, message: 'User Registered Successfully'});
+        });
 
-    }catch(err){
-        console.log('Registration Error',err);
-        res.status(500).json({success:false,message:'Server Error'});
+    } catch(err) {
+        console.log('Registration Error', err);
+        
+        // Better error handling
+        if (err.code === 11000) {
+            return res.status(400).json({
+                success: false, 
+                message: 'Email already in use'
+            });
+        }
+        
+        res.status(500).json({success: false, message: err.message || 'Server Error'});
     }
 });
 //Login API
 app.post('/api/login',passport.authenticate('local'),(req,res)=>{
+
     res.status(200).json({success:true,message:'User Logged In Successfully'});
 
 });
@@ -386,6 +411,124 @@ app.post("/api/comment", async (req, res) => {
   }
 });
 
+//Add to favorites API
+app.post('/api/favorites', async (req, res) => {
+  const { userId, laptopId} = req.body;
+  if (!userId || !laptopId) {
+    return res.status(400).json({ success: false, message: 'Missing fields' });
+  }
+  try {
+    const user=await User.findById(userId);
+    if(!user){
+      return res.status(404).json({ success: false, message: 'User not found'});
+    }
+    const laptop = await Laptop.findById(laptopId);
+    if(!laptop){
+      return res.status(404).json({ success: false, message: 'Laptop not found'});
+    }
+    if(user.favorites.includes(laptopId)){
+      return res.status(400).json({success: false, message: 'Laptop already in favourites'});
+    }
+    user.favorites.push(laptopId);
+    await user.save();
+    res.status(200).json({ success: true, message: 'Laptop added to favourites' });
+  }
+  catch (err){
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Servor error'});
+  }
+});
+
+// Remove from favorites API
+app.delete('/api/favorites', async (req, res) => {
+  const {userId, laptopId} = req.body;
+  if (!userId || !laptopId) {
+    return res.status(400).json({ success: false, message: 'Missing fields' });
+  }
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const laptop = await Laptop.findById(laptopId);
+    if (!laptop) {
+      return res.status(404).json({ success: false, message: 'Laptop not found' });
+    }
+    if (!user.favorites.includes(laptopId)) {
+      return res.status(400).json({ success: false, message: 'Laptop not in favourites' });
+    }
+    user.favorites = user.favorites.filter(fav => fav.toString() !== laptopId);
+    await user.save();
+    res.status(200).json({ success: true, message: 'Laptop removed from favourites' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+//Get User Favorites API
+app.get('/api/favorites/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId).populate('favorites');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.status(200).json({ success: true, favorites: user.favorites });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+//Add to history API
+app.post('/api/history', async (req, res) => {
+  const {userId, laptopId} = req.body;
+  if(!userId || !laptopId) {
+    return res.status(400).json({ success: false, message: 'Missing fields' });
+  }
+  try {
+    const user = await User.findById(userId);
+    if(!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const laptop = await Laptop.findById(laptopId);
+    if(!laptop) {
+      return res.status(404).json({ success: false, message: 'Laptop not found' });
+    }
+    if(user.history.includes(laptopId)) {
+      return res.status(400).json({ success: false, message: 'Laptop already in history' });
+    }
+    // user.history.push(laptopId);
+    // Add to beginning of history array (most recent first)
+    user.history.unshift(laptopId);
+    
+    // Limit history to last 20 items
+    if (user.history.length > 20) {
+      user.history = user.history.slice(0, 20);
+    }
+    await user.save();
+    res.status(200).json({ success: true, message: 'Laptop added to history' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+//Get User History API
+app.get('/api/history/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId).populate('history');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.status(200).json({ success: true, history: user.history });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 app.listen(8080, () => {
   console.log('Server Started at port 8080');
 })

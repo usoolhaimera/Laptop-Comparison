@@ -485,6 +485,12 @@ async function scrapeFlipkart() {
         await page.goto(homeUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
         await handleCookiesPopup(page);
 
+        // go to different page
+        const urlHp="https://www.flipkart.com/search?q=laptop&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off&as-pos=1&as-type=HISTORY&sort=popularity&p%5B%5D=facets.brand%255B%255D%3DHP"
+        await page.goto(urlHp, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await handleCookiesPopup(page);
+
+
         const url = page.url();
         const cardData = [];
 
@@ -574,7 +580,8 @@ async function scrapeFlipkart() {
         const validProducts = cardData.filter(product => product.productLink && product.productLink !== "N/A");
         console.log(`Found ${validProducts.length} products with valid links out of ${cardData.length} total`);
 
-        const productsToProcess = validProducts.slice(0, 5);
+        //
+        const productsToProcess = validProducts;
 
         for (let i = 0; i < productsToProcess.length; i++) {
             const product = productsToProcess[i];
