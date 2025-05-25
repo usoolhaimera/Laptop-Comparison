@@ -167,15 +167,15 @@ function makeKey(lap) {
   return [
     lap.brand,
     lap.series,
-    // lap.processor.brand,
+    lap.processor.brand,
     lap.processor.name,
     lap.processor.gen,
-    // lap.processor.variant,
+    lap.processor.variant,
     lap.ram.size,
-    // lap.ram.type,
+    lap.ram.type,
     lap.storage.size,
     lap.storage.type,
-    // lap.displayInch,
+    lap.displayInch,
     lap.gpu
   ].join('|');
 }
@@ -271,8 +271,8 @@ function buildFinalEntries(amazonData, flipkartData) {
 
 // --- Main Execution ---
 (function main() {
-  const amazonPath   = path.join(__dirname, 'amazon_complete_data.json');
-  const flipkartPath = path.join(__dirname, 'hpFlipkart.json');
+  const amazonPath   = path.join(__dirname, 'amazon_complete_final.json');
+  const flipkartPath = path.join(__dirname, './Flipkart/RemoveHp.json');
 
   const amazonData   = JSON.parse(fs.readFileSync(amazonPath, 'utf-8'));
   const flipkartData = JSON.parse(fs.readFileSync(flipkartPath, 'utf-8'));
